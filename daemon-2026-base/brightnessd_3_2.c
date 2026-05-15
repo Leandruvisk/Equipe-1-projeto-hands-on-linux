@@ -29,18 +29,102 @@ static int __attribute__((unused)) clamp(int value, int min, int max)
 
 static int read_int_file(const char *path, int *value)
 {
-    // TASK 3.2: abra path para leitura e leia um numero inteiro.
-    // Retorne 0 em caso de sucesso ou um codigo negativo em caso de erro.
-    (void)path;
-    (void)value;
-    return -ENOSYS;
+    /*
+     * Ponteiro para o arquivo.
+     */
+    FILE *file;
+
+    /*
+     * fopen abre o arquivo em modo leitura ("r").
+     *
+     * path:
+     * caminho do arquivo.
+     *
+     * Exemplo:
+     * /sys/kernel/smartlamp/ldr
+     */
+    file = fopen(path, "r");
+
+    /*
+     * Se fopen retornar NULL,
+     * significa que ocorreu erro ao abrir.
+     */
+    if (file == NULL)
+    {
+        return -1;
+    }
+
+    /*
+     * fscanf lê um inteiro do arquivo.
+     *
+     * "%d" -> inteiro decimal
+     * value -> onde o número será armazenado
+     *
+     * Exemplo:
+     * arquivo contém "75"
+     * value receberá 75
+     */
+    if (fscanf(file, "%d", value) != 1)
+    {
+        /*
+         * Fecha o arquivo antes de retornar erro.
+         */
+        fclose(file);
+
+        return -1;
+    }
+
+    /*
+     * Fecha o arquivo após a leitura.
+     */
+    fclose(file);
+
+    /*
+     * Retorna 0 indicando sucesso.
+     */
+    return 0;
 }
 
 static int ldr_to_percent(int ldr)
 {
-    // TASK 3.2: limite o LDR para 0-100 e aplique um brilho minimo.
-    (void)ldr;
-    return MIN_PERCENT;
+    /*
+     * Se o valor for menor que 0,
+     * ajusta para 0.
+     */
+    if (ldr < 0)
+    {
+        ldr = 0;
+    }
+
+    /*
+     * Se o valor for maior que 100,
+     * ajusta para 100.
+     */
+    if (ldr > 100)
+    {
+        ldr = 100;
+    }
+
+    /*
+     * Aplica brilho mínimo.
+     *
+     * Exemplo:
+     * MIN_PERCENT = 10
+     *
+     * Se o LDR for:
+     * 0, 1, 5...
+     * o brilho mínimo será 10.
+     */
+    if (ldr < MIN_PERCENT)
+    {
+        return MIN_PERCENT;
+    }
+
+    /*
+     * Caso contrário,
+     * retorna o próprio valor do LDR.
+     */
+    return ldr;
 }
 
 static void sleep_ms(int milliseconds)
