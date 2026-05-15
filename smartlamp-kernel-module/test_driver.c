@@ -41,23 +41,77 @@ static int clamp_percent(long value)
 
 static ssize_t attr_show(struct kobject *sys_obj, struct kobj_attribute *attr, char *buff)
 {
+    /*
+     * attr->attr.name contém o nome do arquivo acessado no sysfs.
+     *
+     * Exemplos:
+     * cat /sys/kernel/smartlamp/led
+     * -> attr_name = "led"
+     *
+     * cat /sys/kernel/smartlamp/ldr
+     * -> attr_name = "ldr"
+     *
+     * cat /sys/kernel/smartlamp/threshold
+     * -> attr_name = "threshold"
+     */
     const char *attr_name = attr->attr.name;
+
+    /*
+     * Variável que armazenará o valor retornado para o usuário.
+     */
     int value = 0;
 
+    /*
+     * sys_obj não será utilizado nesta implementação.
+     * O cast evita warning do compilador.
+     */
     (void)sys_obj;
-    (void)attr_name;
 
-    // TASK 3.1: esta funcao e chamada quando o usuario le um arquivo com cat.
-    // Exemplo: cat /sys/kernel/smartlamp/ldr
-    //
-    // attr_name contem o nome do arquivo lido:
-    // - "led"       deve retornar mock_led
-    // - "ldr"       deve retornar mock_ldr
-    // - "threshold" deve retornar mock_threshold
-    //
-    // Use strcmp() para comparar attr_name e escolha qual valor colocar
-    // na variavel value antes do sprintf().
+    /*
+     * strcmp() compara duas strings.
+     *
+     * Quando o retorno é 0:
+     * significa que as strings são iguais.
+     */
 
+    /*
+     * Se o arquivo acessado for "led",
+     * retorna o valor armazenado em mock_led.
+     */
+    if (strcmp(attr_name, "led") == 0)
+    {
+        value = mock_led;
+    }
+
+    /*
+     * Se o arquivo acessado for "ldr",
+     * retorna o valor armazenado em mock_ldr.
+     */
+    else if (strcmp(attr_name, "ldr") == 0)
+    {
+        value = mock_ldr;
+    }
+
+    /*
+     * Se o arquivo acessado for "threshold",
+     * retorna o valor armazenado em mock_threshold.
+     */
+    else if (strcmp(attr_name, "threshold") == 0)
+    {
+        value = mock_threshold;
+    }
+
+    /*
+     * sprintf escreve o valor dentro do buffer
+     * que será enviado ao usuário.
+     *
+     * "%d\n"
+     * %d  -> inteiro decimal
+     * \n  -> quebra de linha
+     *
+     * Exemplo de saída:
+     * 75
+     */
     return sprintf(buff, "%d\n", value);
 }
 
@@ -76,18 +130,96 @@ static ssize_t attr_store(struct kobject *sys_obj, struct kobj_attribute *attr, 
     value = clamp_percent(value);
     (void)attr_name;
 
-    // TASK 3.1: esta funcao e chamada quando o usuario escreve em um arquivo.
-    // Exemplo: echo 75 | sudo tee /sys/kernel/smartlamp/ldr
-    //
-    // attr_name contem o nome do arquivo escrito:
-    // - "led"       deve atualizar mock_led
-    // - "ldr"       deve atualizar mock_ldr
-    // - "threshold" deve atualizar mock_threshold
-    //
-    // O valor recebido ja foi convertido e limitado para 0..100 na variavel value.
-    // Diferente do driver real, neste mock o ldr pode receber escrita para simular luz.
-    // Use strcmp() para comparar attr_name e atualizar a variavel correta.
+    /*
+     * attr_name recebe o nome do arquivo
+     * onde o usuário escreveu.
+     *
+     * Exemplo:
+     * echo 75 | sudo tee /sys/kernel/smartlamp/ldr
+     *
+     * attr_name = "ldr"
+     */
+    const char *attr_name = attr->attr.name;
 
+    /*
+     * value armazenará o número convertido.
+     */
+    long value;
+
+    /*
+     * ret armazenará o retorno da conversão.
+     */
+    int ret;
+
+    /*
+     * sys_obj não será utilizado nesta implementação.
+     */
+    (void)sys_obj;
+
+    /*
+     * kstrtol() converte texto para número inteiro.
+     *
+     * buff  -> texto recebido do usuário
+     * 10    -> base decimal
+     * &value -> onde o número convertido será salvo
+     *
+     * Exemplo:
+     * "80" -> 80
+     */
+    ret = kstrtol(buff, 10, &value);
+
+    /*
+     * Se ocorrer erro na conversão,
+     * retorna o erro imediatamente.
+     */
+    if (ret)
+        return ret;
+
+    /*
+     * clamp_percent() limita o valor entre 0 e 100.
+     *
+     * Exemplos:
+     * -10 -> 0
+     * 50  -> 50
+     * 150 -> 100
+     */
+    value = clamp_percent(value);
+
+    /*
+     * Verifica qual arquivo foi escrito
+     * e atualiza a variável correspondente.
+     */
+
+    /*
+     * Atualiza mock_led
+     */
+    if (strcmp(attr_name, "led") == 0)
+    {
+        mock_led = value;
+    }
+
+    /*
+     * Atualiza mock_ldr
+     */
+    else if (strcmp(attr_name, "ldr") == 0)
+    {
+        mock_ldr = value;
+    }
+
+    /*
+     * Atualiza mock_threshold
+     */
+    else if (strcmp(attr_name, "threshold") == 0)
+    {
+        mock_threshold = value;
+    }
+
+    /*
+     * Retorna a quantidade de bytes escritos.
+     *
+     * Isso informa ao kernel que a operação
+     * foi concluída com sucesso.
+     */
     return count;
 }
 
