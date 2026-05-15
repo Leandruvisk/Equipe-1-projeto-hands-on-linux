@@ -37,31 +37,155 @@ static int __attribute__((unused)) clamp(int value, int min, int max)
 
 static int read_int_file(const char *path, int *value)
 {
-    // TASK 3.3: reaproveite a implementacao da task 3.2.
-    (void)path;
-    (void)value;
-    return -ENOSYS;
+    /*
+     * Ponteiro para o arquivo que será aberto.
+     */
+    FILE *file;
+
+    /*
+     * Abre o arquivo em modo leitura.
+     *
+     * Exemplo:
+     * /sys/kernel/smartlamp/ldr
+     */
+    file = fopen(path, "r");
+
+    /*
+     * Se fopen retornar NULL,
+     * significa que ocorreu erro ao abrir o arquivo.
+     */
+    if (file == NULL)
+    {
+        return -1;
+    }
+
+    /*
+     * fscanf lê um inteiro do arquivo.
+     *
+     * "%d" -> inteiro decimal
+     * value -> variável onde o valor será armazenado
+     *
+     * Exemplo:
+     * arquivo contém "75"
+     * value receberá 75
+     */
+    if (fscanf(file, "%d", value) != 1)
+    {
+        /*
+         * Fecha o arquivo antes de retornar erro.
+         */
+        fclose(file);
+
+        return -1;
+    }
+
+    /*
+     * Fecha o arquivo após a leitura.
+     */
+    fclose(file);
+
+    /*
+     * Retorna 0 indicando sucesso.
+     */
+    return 0;
 }
 
 static int __attribute__((unused)) write_int_file(const char *path, int value)
 {
-    // TASK 3.3: abra path para escrita e escreva value seguido de '\n'.
-    // Use essa funcao para atualizar o brilho real da tela.
-    (void)path;
-    (void)value;
-    return -ENOSYS;
+    /*
+     * Ponteiro para o arquivo.
+     */
+    FILE *file;
+
+    /*
+     * Abre o arquivo em modo escrita.
+     *
+     * Exemplo:
+     * /sys/class/backlight/intel_backlight/brightness
+     */
+    file = fopen(path, "w");
+
+    /*
+     * Se não conseguir abrir,
+     * retorna erro.
+     */
+    if (file == NULL)
+    {
+        return -1;
+    }
+
+    /*
+     * Escreve o valor inteiro no arquivo.
+     *
+     * "%d\n"
+     * %d  -> inteiro decimal
+     * \n  -> quebra de linha
+     */
+    fprintf(file, "%d\n", value);
+
+    /*
+     * Fecha o arquivo após a escrita.
+     */
+    fclose(file);
+
+    /*
+     * Retorna sucesso.
+     */
+    return 0;
 }
 
 static int ldr_to_brightness(int ldr, int max_brightness)
 {
+    /*
+     * percent armazenará o percentual final
+     * do brilho após os ajustes.
+     */
     int percent;
 
-    // TASK 3.3: limite o LDR para 0-100, aplique MIN_PERCENT
-    // e converta o percentual para a escala 1..max_brightness.
-    percent = MIN_PERCENT;
-    (void)ldr;
-    (void)max_brightness;
-    return percent;
+    /*
+     * Limita o valor do LDR entre 0 e 100.
+     */
+
+    if (ldr < 0)
+    {
+        ldr = 0;
+    }
+
+    if (ldr > 100)
+    {
+        ldr = 100;
+    }
+
+    /*
+     * Aplica brilho mínimo.
+     *
+     * Exemplo:
+     * MIN_PERCENT = 10
+     *
+     * Mesmo que o LDR seja 0,
+     * o brilho nunca ficará totalmente apagado.
+     */
+    if (ldr < MIN_PERCENT)
+    {
+        percent = MIN_PERCENT;
+    }
+    else
+    {
+        percent = ldr;
+    }
+
+    /*
+     * Converte o percentual para a escala real
+     * do hardware usando max_brightness.
+     *
+     * Exemplo:
+     *
+     * percent = 50
+     * max_brightness = 12000
+     *
+     * resultado = 6000
+     */
+    return (percent * max_brightness) / 100;
 }
 
 static void sleep_ms(int milliseconds)
